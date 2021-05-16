@@ -1,0 +1,24 @@
+plugins {
+    id 'java'
+}
+
+group 'com.raminzare.jpodcatcher'
+version '1.0-SNAPSHOT'
+
+java {
+    sourceCompatibility JavaVersion.VERSION_16
+    targetCompatibility JavaVersion.VERSION_16
+}
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.7.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.7.0'
+}
+
+test {
+    useJUnitPlatform()
+}
