@@ -10,6 +10,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
 
 public class PodCatcherServiceSaxParser implements PodCatcherService {
 
@@ -43,8 +45,8 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
         public static final String IMAGE = "image";
         public static final String ITEM = "item";
 
-        private String currentParentElement;
-        private boolean channelVisited;
+        private final Map<String, Boolean> openElements = new HashMap<>();
+
         private StringBuilder currentStringBuilder;
         private Podcast.PodcastBuilder podcastBuilder;
 
@@ -55,23 +57,23 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
 
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            switch (qName){
-                case CHANNEL -> {
-                    channelVisited = true;
-                    currentParentElement = CHANNEL;
-                }
-                case IMAGE -> currentParentElement = IMAGE;
-                case ITEM -> currentParentElement = ITEM;
-                case TITLE ->  currentStringBuilder = new StringBuilder();
+            openElements.put(qName, true);
+
+            switch (qName) {
+                case TITLE -> currentStringBuilder = new StringBuilder();
 
             }
         }
 
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException {
+            openElements.put(qName, false);
             switch (qName){
                 case TITLE -> {
-                    if(currentParentElement .equals(CHANNEL)) {
+                    //Parent open element
+                    if (Boolean.TRUE == openElements.get(CHANNEL)
+                            && !openElements.containsKey(IMAGE)
+                            && !openElements.containsKey(ITEM)) {
                         podcastBuilder.setTitle(currentStringBuilder.toString());
                     }
                     currentStringBuilder = null;
@@ -88,7 +90,7 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
 
         @Override
         public void endDocument() throws SAXException {
-            if(!channelVisited){
+            if (!openElements.containsKey(CHANNEL) && !openElements.containsKey("rss")) {
                 throw new SAXException("The file is not a Podcast RSS");
             }
         }
