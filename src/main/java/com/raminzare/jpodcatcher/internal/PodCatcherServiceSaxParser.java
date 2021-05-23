@@ -30,7 +30,7 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
     public Podcast loadRSS(String uri) {
         try {
             var handler = new RSSHandler();
-            saxParser.parse(uri , handler);
+            saxParser.parse(uri, handler);
             return handler.getPodcast();
         } catch (IOException | SAXException e) {
             e.printStackTrace();
@@ -55,6 +55,16 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
             podcastBuilder = new Podcast.PodcastBuilder();
         }
 
+        /*        Podcast.PodcastBuilder builder = new Podcast.PodcastBuilder();
+        builder.setTitle("Raw Data");
+        builder.setDescription("We’ve entered a new era.");
+        builder.setLink("http://www.rawdatapodcast.com");
+        builder.setPubDate("Thu, 21 Nov 2019 09:00:00 -0000");
+        builder.setLastBuildDate("Wed, 17 Mar 2021 19:22:02 -0000");
+        builder.setLanguage("en");
+        builder.setCopyright("en");
+        builder.setGenerator("PRX Feeder v1.0.0");*/
+
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
             openElements.put(qName, true);
@@ -68,7 +78,7 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException {
             openElements.put(qName, false);
-            switch (qName){
+            switch (qName) {
                 case TITLE -> {
                     //Parent open element
                     if (Boolean.TRUE == openElements.get(CHANNEL)
@@ -83,8 +93,8 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
 
         @Override
         public void characters(char[] ch, int start, int length) throws SAXException {
-            if(currentStringBuilder != null){
-                currentStringBuilder.append(ch , start, length);
+            if (currentStringBuilder != null) {
+                currentStringBuilder.append(ch, start, length);
             }
         }
 
