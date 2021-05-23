@@ -10,12 +10,14 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class PodCatcherServiceSaxParser implements PodCatcherService {
 
     private final SAXParser saxParser;
+    private static final Logger LOG = Logger.getLogger(PodCatcherServiceSaxParser.class.getName());
 
     public PodCatcherServiceSaxParser() {
         var factory = SAXParserFactory.newInstance();
@@ -40,22 +42,36 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
     }
 
     private static class RSSHandler extends DefaultHandler {
-        public static final String CHANNEL = "channel";
-        public static final String TITLE = "title";
-        public static final String IMAGE = "image";
-        public static final String ITEM = "item";
+        private enum Element{
+           RSS ,
+           CHANNEL,
+           TITLE ,
+            DESCRIPTION , LINK , PUB_DATE,LAST_BUILD_DATE,
+            LANGUAGE,COPYRIGHT , GENERATOR,
+           IMAGE ,
+           ITEM ;
 
-        private final Map<String, Boolean> openElements = new HashMap<>();
+           static Element findElement(String name){
+               Arrays.stream(values())
+
+                       .map(Enum::name).map(str-> str.replace('_',''))
+
+           }
+
+        }
+
+        private Queue<String> navigation = new LinkedList<>();
 
         private StringBuilder currentStringBuilder;
         private Podcast.PodcastBuilder podcastBuilder;
+        private int elementIndexVisited = 0;
 
         @Override
         public void startDocument() throws SAXException {
             podcastBuilder = new Podcast.PodcastBuilder();
         }
 
-        /*        Podcast.PodcastBuilder builder = new Podcast.PodcastBuilder();
+        /* Podcast.PodcastBuilder builder = new Podcast.PodcastBuilder();
         builder.setTitle("Raw Data");
         builder.setDescription("We’ve entered a new era.");
         builder.setLink("http://www.rawdatapodcast.com");
@@ -67,23 +83,46 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
 
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            openElements.put(qName, true);
+            navigation.offer(qName);
 
-            switch (qName) {
-                case TITLE -> currentStringBuilder = new StringBuilder();
+            var supportedElement =
+                     Element.valueOf(qName.toUpperCase());
+            if(supportedElement != null){
+                switch (supportedElement) {
+                    case TITLE -> currentStringBuilder = new StringBuilder();
 
+                    case RSS  -> {
+                        if(elementIndexVisited == 0){
+                            throw new SAXException("No RSS element found in the XML");
+                        }
+                    }
+                    case CHANNEL -> {
+                        if(elementIndexVisited == 1){
+                            throw new SAXException("No RSS element found in the XML");
+                        }
+                    }
+                }
             }
+            else{
+                LOG.fine(()-> "Element %s not supported yet".formatted(qName));
+            }
+
+
+            if((elementIndexVisited == 0 && !qName.equals("rss")) || (elementIndexVisited == 1 && !qName.equals(CHANNEL))){
+                throw new SAXException("Not a valid Podcast rss");
+            }
+
+
+            elementIndexVisited++;
         }
 
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException {
-            openElements.put(qName, false);
+            navigation.poll();
             switch (qName) {
                 case TITLE -> {
                     //Parent open element
-                    if (Boolean.TRUE == openElements.get(CHANNEL)
-                            && !openElements.containsKey(IMAGE)
-                            && !openElements.containsKey(ITEM)) {
+                    if (CHANNEL.equals(navigation.peek())) {
                         podcastBuilder.setTitle(currentStringBuilder.toString());
                     }
                     currentStringBuilder = null;
@@ -100,9 +139,7 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
 
         @Override
         public void endDocument() throws SAXException {
-            if (!openElements.containsKey(CHANNEL) && !openElements.containsKey("rss")) {
-                throw new SAXException("The file is not a Podcast RSS");
-            }
+
         }
 
         public Podcast getPodcast() {
