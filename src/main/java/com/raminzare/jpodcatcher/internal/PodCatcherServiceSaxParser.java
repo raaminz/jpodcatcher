@@ -46,16 +46,26 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
            RSS ,
            CHANNEL,
            TITLE ,
-            DESCRIPTION , LINK , PUB_DATE,LAST_BUILD_DATE,
+            DESCRIPTION , LINK , PUB_DATE("pubDate"),LAST_BUILD_DATE("lastBuildDate"),
             LANGUAGE,COPYRIGHT , GENERATOR,
            IMAGE ,
-           ITEM ;
+           ITEM  ;
 
-           static Element findElement(String name){
-               Arrays.stream(values())
+           private String elementName;
+           Element(){
+               this.elementName= name().toLowerCase();
+           }
+           Element(String elementName){
+               this.elementName = elementName;
+           }
 
-                       .map(Enum::name).map(str-> str.replace('_',''))
+           String getElementName() {
+                return elementName;
+            }
 
+           static Optional<Element> getElement(String elementName){
+             return Arrays.stream(Element.values())
+                     .filter(el-> el.elementName.equalsIgnoreCase(elementName)).findFirst();
            }
 
         }
@@ -86,32 +96,33 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
             navigation.offer(qName);
 
             var supportedElement =
-                     Element.valueOf(qName.toUpperCase());
+                     Element.getElement(qName).orElse(null);
             if(supportedElement != null){
                 switch (supportedElement) {
-                    case TITLE -> currentStringBuilder = new StringBuilder();
-
                     case RSS  -> {
-                        if(elementIndexVisited == 0){
+                        if(elementIndexVisited != 0){
                             throw new SAXException("No RSS element found in the XML");
                         }
                     }
                     case CHANNEL -> {
-                        if(elementIndexVisited == 1){
+                        if(elementIndexVisited != 1){
                             throw new SAXException("No RSS element found in the XML");
                         }
                     }
+                    default -> currentStringBuilder = new StringBuilder();
                 }
             }
             else{
+                //TODO is logging enough?
                 LOG.fine(()-> "Element %s not supported yet".formatted(qName));
             }
 
 
-            if((elementIndexVisited == 0 && !qName.equals("rss")) || (elementIndexVisited == 1 && !qName.equals(CHANNEL))){
+            if((elementIndexVisited == 0 && !qName.equals("rss")) ||
+                    (elementIndexVisited == 1 && !qName.equals(
+                    Element.CHANNEL.getElementName()))){
                 throw new SAXException("Not a valid Podcast rss");
             }
-
 
             elementIndexVisited++;
         }
@@ -119,14 +130,23 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException {
             navigation.poll();
-            switch (qName) {
-                case TITLE -> {
-                    //Parent open element
-                    if (CHANNEL.equals(navigation.peek())) {
-                        podcastBuilder.setTitle(currentStringBuilder.toString());
+            var element = Element.getElement(qName).orElse(null);
+            if(element != null) {
+                switch (element) {
+                    case TITLE -> {
+                        //Parent open element
+                        if (Element.CHANNEL.getElementName().equals(navigation.peek())) {
+                            podcastBuilder.setTitle(currentStringBuilder.toString());
+                        }
                     }
-                    currentStringBuilder = null;
+                    case DESCRIPTION ->
+                        podcastBuilder.setDescription(currentStringBuilder.toString());
+                    case LINK -> podcastBuilder.setLink(currentStringBuilder.toString());
+
                 }
+                currentStringBuilder = null;
+            }else{
+                //TODO decide
             }
         }
 
