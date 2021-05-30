@@ -29,7 +29,7 @@ class PodCatcherServiceSaxParserTest {
         builder.setPubDate("Thu, 21 Nov 2019 09:00:00 -0000");
         builder.setLastBuildDate("Wed, 17 Mar 2021 19:22:02 -0000");
         builder.setLanguage("en");
-        builder.setCopyright("en");
+        builder.setCopyright("All rights reserved");
         builder.setGenerator("PRX Feeder v1.0.0");
 
         Podcast expectedPodcast = builder.build();

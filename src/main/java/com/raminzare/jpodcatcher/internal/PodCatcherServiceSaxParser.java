@@ -11,6 +11,10 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 import java.util.*;
+import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -70,7 +74,12 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
 
         }
 
-        private Queue<String> navigation = new LinkedList<>();
+        @FunctionalInterface
+        interface SimplePredict{
+            boolean test();
+        }
+
+        private LinkedList<String> navigation = new LinkedList<>();
 
         private StringBuilder currentStringBuilder;
         private Podcast.PodcastBuilder podcastBuilder;
@@ -81,19 +90,9 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
             podcastBuilder = new Podcast.PodcastBuilder();
         }
 
-        /* Podcast.PodcastBuilder builder = new Podcast.PodcastBuilder();
-        builder.setTitle("Raw Data");
-        builder.setDescription("We’ve entered a new era.");
-        builder.setLink("http://www.rawdatapodcast.com");
-        builder.setPubDate("Thu, 21 Nov 2019 09:00:00 -0000");
-        builder.setLastBuildDate("Wed, 17 Mar 2021 19:22:02 -0000");
-        builder.setLanguage("en");
-        builder.setCopyright("en");
-        builder.setGenerator("PRX Feeder v1.0.0");*/
-
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            navigation.offer(qName);
+            navigation.addLast(qName);
 
             var supportedElement =
                      Element.getElement(qName).orElse(null);
@@ -129,24 +128,31 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
 
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException {
-            navigation.poll();
+            navigation.removeLast();
             var element = Element.getElement(qName).orElse(null);
-            if(element != null) {
-                switch (element) {
-                    case TITLE -> {
-                        //Parent open element
-                        if (Element.CHANNEL.getElementName().equals(navigation.peek())) {
-                            podcastBuilder.setTitle(currentStringBuilder.toString());
-                        }
-                    }
-                    case DESCRIPTION ->
-                        podcastBuilder.setDescription(currentStringBuilder.toString());
-                    case LINK -> podcastBuilder.setLink(currentStringBuilder.toString());
+            if(!navigation.isEmpty() && element != null) {
+                Predicate<Element> checkParent = (elm) -> elm.getElementName().equals(navigation.getLast());
+                Supplier<String> content = () -> currentStringBuilder == null ? null : currentStringBuilder.toString().trim();
 
+                if(checkParent.test(Element.CHANNEL)){
+                    channelSwitches(element, content.get());
                 }
                 currentStringBuilder = null;
             }else{
                 //TODO decide
+            }
+        }
+
+        private void channelSwitches(Element element , String content){
+            switch (element) {
+                case TITLE -> podcastBuilder.setTitle(content);
+                case DESCRIPTION -> podcastBuilder.setDescription(content);
+                case LINK -> podcastBuilder.setLink(content);
+                case COPYRIGHT -> podcastBuilder.setCopyright(content);
+                case LANGUAGE -> podcastBuilder.setLanguage(content);
+                case GENERATOR -> podcastBuilder.setGenerator(content);
+                case PUB_DATE -> podcastBuilder.setPubDate(content);
+                case LAST_BUILD_DATE -> podcastBuilder.setLastBuildDate(content);
             }
         }
 
