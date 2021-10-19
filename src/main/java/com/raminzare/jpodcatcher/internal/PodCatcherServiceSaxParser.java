@@ -10,12 +10,11 @@ import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.function.Function;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.Optional;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class PodCatcherServiceSaxParser implements PodCatcherService {
@@ -46,6 +45,8 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
     }
 
     private static class RSSHandler extends DefaultHandler {
+        private final LinkedList<String> navigation = new LinkedList<>();
+
         private enum Element{
            RSS ,
            CHANNEL,
@@ -55,7 +56,7 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
            IMAGE ,
            ITEM  ;
 
-           private String elementName;
+           private final String elementName;
            Element(){
                this.elementName= name().toLowerCase();
            }
@@ -73,13 +74,6 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
            }
 
         }
-
-        @FunctionalInterface
-        interface SimplePredict{
-            boolean test();
-        }
-
-        private LinkedList<String> navigation = new LinkedList<>();
 
         private StringBuilder currentStringBuilder;
         private Podcast.PodcastBuilder podcastBuilder;
