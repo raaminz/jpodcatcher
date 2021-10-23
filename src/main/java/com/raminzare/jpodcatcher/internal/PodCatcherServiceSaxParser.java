@@ -1,6 +1,8 @@
 package com.raminzare.jpodcatcher.internal;
 
 import com.raminzare.jpodcatcher.PodCatcherService;
+import com.raminzare.jpodcatcher.model.Image;
+import com.raminzare.jpodcatcher.model.Item;
 import com.raminzare.jpodcatcher.model.Podcast;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -11,6 +13,7 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -19,8 +22,8 @@ import java.util.logging.Logger;
 
 public class PodCatcherServiceSaxParser implements PodCatcherService {
 
-    private final SAXParser saxParser;
     private static final Logger LOG = Logger.getLogger(PodCatcherServiceSaxParser.class.getName());
+    private final SAXParser saxParser;
 
     public PodCatcherServiceSaxParser() {
         var factory = SAXParserFactory.newInstance();
@@ -45,99 +48,107 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
     }
 
     private static class RSSHandler extends DefaultHandler {
-        private final LinkedList<String> navigation = new LinkedList<>();
-
-        private enum Element{
-           RSS ,
-           CHANNEL,
-           TITLE ,
-            DESCRIPTION , LINK , PUB_DATE("pubDate"),LAST_BUILD_DATE("lastBuildDate"),
-            LANGUAGE,COPYRIGHT , GENERATOR,
-           IMAGE ,
-           ITEM  ;
-
-           private final String elementName;
-           Element(){
-               this.elementName= name().toLowerCase();
-           }
-           Element(String elementName){
-               this.elementName = elementName;
-           }
-
-           String getElementName() {
-                return elementName;
-            }
-
-           static Optional<Element> getElement(String elementName){
-             return Arrays.stream(Element.values())
-                     .filter(el-> el.elementName.equalsIgnoreCase(elementName)).findFirst();
-           }
-
-        }
+        private final Deque<String> navigation = new LinkedList<>();
 
         private StringBuilder currentStringBuilder;
         private Podcast.PodcastBuilder podcastBuilder;
+        private Image.ImageBuilder imageBuilder;
+        private Item.ItemBuilder itemBuilder;
+
         private int elementIndexVisited = 0;
 
         @Override
         public void startDocument() throws SAXException {
             podcastBuilder = new Podcast.PodcastBuilder();
+            imageBuilder = new Image.ImageBuilder();
+            itemBuilder = new Item.ItemBuilder();
         }
 
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
-            navigation.addLast(qName);
-
             var supportedElement =
-                     Element.getElement(qName).orElse(null);
-            if(supportedElement != null){
+                    Element.getElement(qName).orElse(null);
+            if (supportedElement != null) {
                 switch (supportedElement) {
-                    case RSS  -> {
-                        if(elementIndexVisited != 0){
+                    case RSS -> {
+                        if (!navigation.isEmpty()) {
                             throw new SAXException("No RSS element found in the XML");
                         }
                     }
                     case CHANNEL -> {
-                        if(elementIndexVisited != 1){
+                        if (navigation.isEmpty() || !navigation.peek().equals(Element.RSS.getElementName())) {
                             throw new SAXException("No RSS element found in the XML");
                         }
                     }
+                    case IMAGE -> {
+                        if (navigation.isEmpty() || !navigation.peek().equals(Element.CHANNEL.getElementName())) {
+                            throw new SAXException("No Channel element found in the XML");
+                        }
+                        imageBuilder = new Image.ImageBuilder();
+                    }
+                    case ITEM -> {
+                        if (navigation.isEmpty() || !navigation.peek().equals(Element.CHANNEL.getElementName())) {
+                            throw new SAXException("No Channel element found in the XML");
+                        }
+                        itemBuilder = new Item.ItemBuilder();
+                    }
+
                     default -> currentStringBuilder = new StringBuilder();
                 }
-            }
-            else{
+
+            } else {
                 //TODO is logging enough?
-                LOG.fine(()-> "Element %s not supported yet".formatted(qName));
+                LOG.fine(() -> "Element %s not supported yet".formatted(qName));
             }
 
-
-            if((elementIndexVisited == 0 && !qName.equals("rss")) ||
-                    (elementIndexVisited == 1 && !qName.equals(
-                    Element.CHANNEL.getElementName()))){
-                throw new SAXException("Not a valid Podcast rss");
-            }
-
+            navigation.push(qName);
             elementIndexVisited++;
         }
 
         @Override
         public void endElement(String uri, String localName, String qName) throws SAXException {
-            navigation.removeLast();
-            var element = Element.getElement(qName).orElse(null);
-            if(!navigation.isEmpty() && element != null) {
-                Predicate<Element> checkParent = (elm) -> elm.getElementName().equals(navigation.getLast());
+            navigation.poll();
+            var element = Element.getElement(qName);
+            if (!navigation.isEmpty() && element.isPresent()) {
+                Predicate<Element> checkParent = (elm) -> elm.getElementName().equals(navigation.peek());
                 Supplier<String> content = () -> currentStringBuilder == null ? null : currentStringBuilder.toString().trim();
 
-                if(checkParent.test(Element.CHANNEL)){
-                    channelSwitches(element, content.get());
+                if (checkParent.test(Element.CHANNEL)) {
+                    channelSwitches(element.get(), content.get());
+                } else if (checkParent.test(Element.IMAGE)) {
+                    imageSwitches(element.get(), content.get());
+                } else if (checkParent.test(Element.ITEM)) {
+                    itemSwitches(element.get(), content.get());
                 }
                 currentStringBuilder = null;
-            }else{
+            } else {
                 //TODO decide
             }
         }
 
-        private void channelSwitches(Element element , String content){
+        private void itemSwitches(Element element, String content) {
+            switch (element) {
+                case GUID -> itemBuilder.setGuid(content);
+                case TITLE -> itemBuilder.setTitle(content);
+                case PUB_DATE -> itemBuilder.setPubDate(content);
+                case LINK -> itemBuilder.setLink(content);
+                case DESCRIPTION -> itemBuilder.setDescription(content);
+                case AUTHOR -> itemBuilder.setAuthor(content);
+                case CATEGORY -> itemBuilder.addCategory(content);
+                default -> LOG.warning(() -> "%s element with value %s is not supported as ITEM info".formatted(element, content));
+            }
+        }
+
+        private void imageSwitches(Element element, String content) {
+            switch (element) {
+                case URL -> imageBuilder.setUrl(content);
+                case TITLE -> imageBuilder.setTitle(content);
+                case LINK -> imageBuilder.setLink(content);
+                default -> LOG.warning(() -> "%s element with value %s is not supported as IMAGE info".formatted(element, content));
+            }
+        }
+
+        private void channelSwitches(Element element, String content) {
             switch (element) {
                 case TITLE -> podcastBuilder.setTitle(content);
                 case DESCRIPTION -> podcastBuilder.setDescription(content);
@@ -147,6 +158,14 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
                 case GENERATOR -> podcastBuilder.setGenerator(content);
                 case PUB_DATE -> podcastBuilder.setPubDate(content);
                 case LAST_BUILD_DATE -> podcastBuilder.setLastBuildDate(content);
+                case IMAGE -> {
+                    podcastBuilder.setImage(imageBuilder.build());
+                    imageBuilder = null;
+                }
+                case ITEM -> {
+                    podcastBuilder.addItem(itemBuilder.build());
+                    itemBuilder = null;
+                }
             }
         }
 
@@ -164,6 +183,32 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
 
         public Podcast getPodcast() {
             return podcastBuilder.build();
+        }
+
+        private enum Element {
+            RSS, CHANNEL, TITLE, DESCRIPTION, LINK, PUB_DATE("pubDate"),
+            LAST_BUILD_DATE("lastBuildDate"), LANGUAGE, COPYRIGHT, GENERATOR, IMAGE, ITEM,
+            URL, GUID, AUTHOR, CATEGORY;
+
+            private final String elementName;
+
+            Element() {
+                this.elementName = name().toLowerCase();
+            }
+
+            Element(String elementName) {
+                this.elementName = elementName;
+            }
+
+            static Optional<Element> getElement(String elementName) {
+                return Arrays.stream(Element.values())
+                        .filter(el -> el.elementName.equalsIgnoreCase(elementName)).findFirst();
+            }
+
+            String getElementName() {
+                return elementName;
+            }
+
         }
     }
 }
