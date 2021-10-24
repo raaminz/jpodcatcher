@@ -16,7 +16,7 @@
             <link>http://www.rawdatapodcast.com</link>
         </image>
         <item>
-            <guid isPermaLink="false">prx_190_d87ff6c6-c480-4b60-b970-9f45620b0fd1</guid>
+            <guid isPermaLink="false">b970-9f45620b0fd1</guid>
             <title>Technically Sweet</title>
             <pubDate>Thu, 21 Nov 2019 09:00:00 -0000</pubDate>
             <link>https://beta.prx.org/stories/295275</link>
@@ -26,7 +26,6 @@
             <enclosure
                     url="https://dts.podtrac.com/redirect.mp3/dovetail.prxu.org/_/190/d87ff6c6-c480-4b60-b970-9f45620b0fd1/Technically_Sweet_P1_Raw_Data.mp3"
                     type="audio/mpeg" length="39374396"/>
-            <author>hello@rawdatapodcast.com (Stanford and PRX)</author>
             <category>
                 <![CDATA[Blockchain]]>
             </category>
@@ -35,7 +34,7 @@
             </category>
         </item>
         <item>
-            <guid isPermaLink="false">prx_190_65a2aa36-12ae-4ae8-be0d-0de11106e107</guid>
+            <guid isPermaLink="false">be0d-0de11106e107</guid>
             <title>Training Computers to See</title>
             <pubDate>Thu, 14 Nov 2019 09:00:00 -0000</pubDate>
             <link>https://beta.prx.org/stories/274325</link>
@@ -45,7 +44,6 @@
             <enclosure
                     url="https://dts.podtrac.com/redirect.mp3/dovetail.prxu.org/_/190/65a2aa36-12ae-4ae8-be0d-0de11106e107/RD_Computer_Eyes_FINAL_pt1.mp3"
                     type="audio/mpeg" length="43054816"/>
-            <author>hello@rawdatapodcast.com (Stanford and PRX)</author>
             <category>
                 <![CDATA[Authoritarianism]]>
             </category>

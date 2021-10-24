@@ -4,53 +4,48 @@ import java.util.ArrayList;
 import java.util.List;
 
 public record Item(String guid, String title, String pubDate, String link, String description,
-                   String author, List<String> categories) {
+                   Enclosure enclosure, List<String> categories) {
     public static class ItemBuilder {
         private String guid;
         private String title;
         private String pubDate;
         private String link;
         private String description;
-        private String author;
+        private Enclosure enclosure;
         private final List<String> categories = new ArrayList<>();
 
-        public ItemBuilder setGuid(String guid) {
+        public void setGuid(String guid) {
             this.guid = guid;
-            return this;
         }
 
-        public ItemBuilder setTitle(String title) {
+        public void setTitle(String title) {
             this.title = title;
-            return this;
         }
 
-        public ItemBuilder setPubDate(String pubDate) {
+        public void setPubDate(String pubDate) {
             this.pubDate = pubDate;
-            return this;
         }
 
-        public ItemBuilder setLink(String link) {
+        public void setLink(String link) {
             this.link = link;
-            return this;
         }
 
-        public ItemBuilder setDescription(String description) {
+        public void setDescription(String description) {
             this.description = description;
-            return this;
         }
 
-        public ItemBuilder setAuthor(String author) {
-            this.author = author;
-            return this;
+        public void setEnclosure(Enclosure enclosure) {
+            this.enclosure = enclosure;
         }
 
-        public ItemBuilder addCategory(String category) {
-            this.categories.add(category);
-            return this;
+        public void addCategory(String category) {
+            categories.add(category);
         }
 
         public Item build() {
-            return new Item(guid, title, pubDate, link, description, author, categories);
+            return new Item(guid, title, pubDate, link, description, enclosure, categories);
         }
+
+
     }
 }

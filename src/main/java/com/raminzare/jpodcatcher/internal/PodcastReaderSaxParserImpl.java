@@ -1,6 +1,8 @@
 package com.raminzare.jpodcatcher.internal;
 
-import com.raminzare.jpodcatcher.PodCatcherService;
+import com.raminzare.jpodcatcher.PodcastReader;
+import com.raminzare.jpodcatcher.PodcastReaderException;
+import com.raminzare.jpodcatcher.model.Enclosure;
 import com.raminzare.jpodcatcher.model.Image;
 import com.raminzare.jpodcatcher.model.Item;
 import com.raminzare.jpodcatcher.model.Podcast;
@@ -20,12 +22,12 @@ import java.util.function.Predicate;
 import java.util.function.Supplier;
 import java.util.logging.Logger;
 
-public class PodCatcherServiceSaxParser implements PodCatcherService {
+public class PodcastReaderSaxParserImpl implements PodcastReader {
 
-    private static final Logger LOG = Logger.getLogger(PodCatcherServiceSaxParser.class.getName());
+    private static final Logger LOG = Logger.getLogger(PodcastReaderSaxParserImpl.class.getName());
     private final SAXParser saxParser;
 
-    public PodCatcherServiceSaxParser() {
+    public PodcastReaderSaxParserImpl() {
         var factory = SAXParserFactory.newInstance();
         try {
             this.saxParser = factory.newSAXParser();
@@ -35,16 +37,14 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
     }
 
     @Override
-    public Podcast loadRSS(String uri) {
+    public Podcast loadRSS(String uri) throws PodcastReaderException {
         try {
             var handler = new RSSHandler();
             saxParser.parse(uri, handler);
             return handler.getPodcast();
         } catch (IOException | SAXException e) {
-            e.printStackTrace();
+            throw new PodcastReaderException(e);
         }
-
-        return null;
     }
 
     private static class RSSHandler extends DefaultHandler {
@@ -68,6 +68,8 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
             var supportedElement =
                     Element.getElement(qName).orElse(null);
+            Predicate<Element> checkParent = elm -> navigation.isEmpty() || navigation.peek().equals(elm.getElementName());
+
             if (supportedElement != null) {
                 switch (supportedElement) {
                     case RSS -> {
@@ -76,23 +78,32 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
                         }
                     }
                     case CHANNEL -> {
-                        if (navigation.isEmpty() || !navigation.peek().equals(Element.RSS.getElementName())) {
+                        if (!checkParent.test(Element.RSS)) {
                             throw new SAXException("No RSS element found in the XML");
                         }
                     }
                     case IMAGE -> {
-                        if (navigation.isEmpty() || !navigation.peek().equals(Element.CHANNEL.getElementName())) {
+                        if (!checkParent.test(Element.CHANNEL)) {
                             throw new SAXException("No Channel element found in the XML");
                         }
                         imageBuilder = new Image.ImageBuilder();
                     }
                     case ITEM -> {
-                        if (navigation.isEmpty() || !navigation.peek().equals(Element.CHANNEL.getElementName())) {
+                        if (!checkParent.test(Element.CHANNEL)) {
                             throw new SAXException("No Channel element found in the XML");
                         }
                         itemBuilder = new Item.ItemBuilder();
                     }
-
+                    case ENCLOSURE -> {
+                        if (checkParent.test(Element.ITEM) && itemBuilder != null) {
+                            Enclosure enclosure = new Enclosure.EnclosureBuilder()
+                                    .setLength(Optional.ofNullable(attributes.getValue("length"))
+                                            .map(Long::valueOf).orElse(null))
+                                    .setType(attributes.getValue("type"))
+                                    .setUrl(attributes.getValue("url")).build();
+                            itemBuilder.setEnclosure(enclosure);
+                        }
+                    }
                     default -> currentStringBuilder = new StringBuilder();
                 }
 
@@ -133,7 +144,6 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
                 case PUB_DATE -> itemBuilder.setPubDate(content);
                 case LINK -> itemBuilder.setLink(content);
                 case DESCRIPTION -> itemBuilder.setDescription(content);
-                case AUTHOR -> itemBuilder.setAuthor(content);
                 case CATEGORY -> itemBuilder.addCategory(content);
                 default -> LOG.warning(() -> "%s element with value %s is not supported as ITEM info".formatted(element, content));
             }
@@ -178,7 +188,7 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
 
         @Override
         public void endDocument() throws SAXException {
-
+            //Do Nothing
         }
 
         public Podcast getPodcast() {
@@ -188,7 +198,7 @@ public class PodCatcherServiceSaxParser implements PodCatcherService {
         private enum Element {
             RSS, CHANNEL, TITLE, DESCRIPTION, LINK, PUB_DATE("pubDate"),
             LAST_BUILD_DATE("lastBuildDate"), LANGUAGE, COPYRIGHT, GENERATOR, IMAGE, ITEM,
-            URL, GUID, AUTHOR, CATEGORY;
+            URL, GUID, AUTHOR, CATEGORY, ENCLOSURE;
 
             private final String elementName;
 
