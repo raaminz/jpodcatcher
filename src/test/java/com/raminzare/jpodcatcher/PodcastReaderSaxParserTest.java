@@ -4,37 +4,34 @@ import com.raminzare.jpodcatcher.internal.PodcastReaderSaxParserImpl;
 import com.raminzare.jpodcatcher.model.Item;
 import com.raminzare.jpodcatcher.model.Podcast;
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
 import java.util.Objects;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 class PodcastReaderSaxParserTest {
 
-    public static final String SAMPLE_PODCAST = "simple_podcast.xml";
-    PodcastReader parser;
+    static String samplePodcastURI;
+    static PodcastReader parser;
 
-    @BeforeEach
-    void setup() {
+    @BeforeAll
+    static void setup() {
         parser = new PodcastReaderSaxParserImpl();
-    }
-
-    String getSampleRSSURI() {
-        return Objects.requireNonNull(this.getClass().getClassLoader().getResource(SAMPLE_PODCAST)).toString();
+        samplePodcastURI = Objects.requireNonNull(PodcastReaderSaxParserTest.class
+                .getClassLoader().getResource("simple_podcast.xml")).toString();
     }
 
     @Test
-    void wrongRSSURIShouldThrowException()  {
-        Assertions.assertThrows(PodcastReaderException.class, () -> parser.loadRSS("BLAH_BLAH_URL"));
+    void wrongRSSURIShouldThrowException() {
+        Assertions.assertThrows(PodcastReaderException.class, () -> parser.loadRSS("BLAH_BLAH_URI"));
     }
 
     @Test
     void testLoadRssCorePodcastData() throws PodcastReaderException {
-        Podcast actualPodcast = parser.loadRSS(getSampleRSSURI());
+        Podcast actualPodcast = parser.loadRSS(samplePodcastURI);
 
         assertAll(() -> assertEquals("Raw Data", actualPodcast.title()),
                 () -> assertEquals("We’ve entered a new era.", actualPodcast.description()),
@@ -52,7 +49,7 @@ class PodcastReaderSaxParserTest {
 
     @Test
     void testLoadRssCoreItemData() throws PodcastReaderException {
-        Podcast actualPodcast = parser.loadRSS(getSampleRSSURI());
+        Podcast actualPodcast = parser.loadRSS(samplePodcastURI);
         assertEquals(2, actualPodcast.items().size());
         Item firstItem = actualPodcast.items().get(0);
         assertAll(
@@ -60,6 +57,10 @@ class PodcastReaderSaxParserTest {
                 () -> assertEquals("Technically Sweet", firstItem.title()),
                 () -> assertEquals("Thu, 21 Nov 2019 09:00:00 -0000", firstItem.pubDate()),
                 () -> assertEquals("https://beta.prx.org/stories/295275", firstItem.link()),
+                () -> assertNotNull(firstItem.enclosure()),
+                () -> assertEquals("https://dts.podtrac.com/Technically_Sweet_P1_Raw_Data.mp3", firstItem.enclosure().url()),
+                () -> assertEquals("audio/mpeg", firstItem.enclosure().type()),
+                () -> assertEquals(39374396L, firstItem.enclosure().length()),
                 () -> assertEquals(Arrays.asList("Blockchain", "Charity ryerson"), firstItem.categories())
         );
     }

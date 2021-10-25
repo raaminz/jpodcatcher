@@ -55,8 +55,6 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
         private Image.ImageBuilder imageBuilder;
         private Item.ItemBuilder itemBuilder;
 
-        private int elementIndexVisited = 0;
-
         @Override
         public void startDocument() throws SAXException {
             podcastBuilder = new Podcast.PodcastBuilder();
@@ -96,12 +94,7 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
                     }
                     case ENCLOSURE -> {
                         if (checkParent.test(Element.ITEM) && itemBuilder != null) {
-                            Enclosure enclosure = new Enclosure.EnclosureBuilder()
-                                    .setLength(Optional.ofNullable(attributes.getValue("length"))
-                                            .map(Long::valueOf).orElse(null))
-                                    .setType(attributes.getValue("type"))
-                                    .setUrl(attributes.getValue("url")).build();
-                            itemBuilder.setEnclosure(enclosure);
+                            readEnclosureElement(attributes);
                         }
                     }
                     default -> currentStringBuilder = new StringBuilder();
@@ -113,7 +106,15 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
             }
 
             navigation.push(qName);
-            elementIndexVisited++;
+        }
+
+        private void readEnclosureElement(Attributes attributes) {
+            Enclosure enclosure = new Enclosure.EnclosureBuilder()
+                    .setLength(Optional.ofNullable(attributes.getValue("length"))
+                            .map(Long::valueOf).orElse(null))
+                    .setType(attributes.getValue("type"))
+                    .setUrl(attributes.getValue("url")).build();
+            itemBuilder.setEnclosure(enclosure);
         }
 
         @Override
@@ -121,7 +122,7 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
             navigation.poll();
             var element = Element.getElement(qName);
             if (!navigation.isEmpty() && element.isPresent()) {
-                Predicate<Element> checkParent = (elm) -> elm.getElementName().equals(navigation.peek());
+                Predicate<Element> checkParent = elm -> elm.getElementName().equals(navigation.peek());
                 Supplier<String> content = () -> currentStringBuilder == null ? null : currentStringBuilder.toString().trim();
 
                 if (checkParent.test(Element.CHANNEL)) {
@@ -145,6 +146,7 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
                 case LINK -> itemBuilder.setLink(content);
                 case DESCRIPTION -> itemBuilder.setDescription(content);
                 case CATEGORY -> itemBuilder.addCategory(content);
+                case ENCLOSURE -> {/*Already handled with attributes*/}
                 default -> LOG.warning(() -> "%s element with value %s is not supported as ITEM info".formatted(element, content));
             }
         }
@@ -176,6 +178,7 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
                     podcastBuilder.addItem(itemBuilder.build());
                     itemBuilder = null;
                 }
+                default -> LOG.warning(() -> "%s element with value %s is not supported as CHANNEL info".formatted(element, content));
             }
         }
 
