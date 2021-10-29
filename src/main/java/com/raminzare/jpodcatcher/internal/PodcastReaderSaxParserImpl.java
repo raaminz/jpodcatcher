@@ -6,6 +6,7 @@ import com.raminzare.jpodcatcher.model.Enclosure;
 import com.raminzare.jpodcatcher.model.Image;
 import com.raminzare.jpodcatcher.model.Item;
 import com.raminzare.jpodcatcher.model.Podcast;
+import com.raminzare.jpodcatcher.model.itunes.ItunesChannelData;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -54,6 +55,7 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
         private Podcast.PodcastBuilder podcastBuilder;
         private Image.ImageBuilder imageBuilder;
         private Item.ItemBuilder itemBuilder;
+        private ItunesChannelData.ItemChannelDataBuilder itemChannelDataBuilder;
 
         @Override
         public void startDocument() throws SAXException {
@@ -109,7 +111,7 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
         }
 
         private void readEnclosureElement(Attributes attributes) {
-            Enclosure enclosure = new Enclosure.EnclosureBuilder()
+            var enclosure = new Enclosure.EnclosureBuilder()
                     .setLength(Optional.ofNullable(attributes.getValue("length"))
                             .map(Long::valueOf).orElse(null))
                     .setType(attributes.getValue("type"))
