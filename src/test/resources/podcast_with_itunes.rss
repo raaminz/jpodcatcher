@@ -23,20 +23,26 @@
         <itunes:image href="https://applehosted.podcasts.apple.com/hiking_treks/artwork.png"/>
         <itunes:new-feed-url>https://newlocation.com/example.rss</itunes:new-feed-url>
         <item>
-            <title>Tips to Creating a Blog</title>
-            <description>Tips for creating a blog.&lt;br&gt;
-                There are no hard and fast rules on how to blog. Having said that, bloggers will likely increase their exposure by following some simple blog guidelines. &lt;br&gt;&lt;br&gt;
-                1) Stay on topic.&lt;br&gt;
-                Opinions are generally accepted but the content of the items in the blog should all relate to a general theme. Unless you have an uncanny knack for wit, humor or cynicism, the majority of your readers will be interested in the content that relates to a specific defined theme or loosely defined area of interest. Most readers won&amp;apos;t care that you eat Cheerios for breakfast. They may, however, be interested in the fact that vinegar takes out stains and that toilet paper rolls make great wreaths. Define a topic and stick to it. This will ensure that you create a loyal following of interested readers.&lt;br&gt;&lt;br&gt;</description>
-            <link>http://www.rss-specifications.com/10-tips-for-bloggers.htm</link>
-            <enclosure url="http://www.rss-specifications.com/podcasts/tips_to_creating_a_blog.mp3" length="1157907" type="audio/mpeg"></enclosure>
-            <pubDate>Mon, 25 Jul 2005 09:00:00 -0400</pubDate>
-            <itunes:category text="Technology">
-                <itunes:category text="Information Technology"/>
-            </itunes:category>
-            <itunes:explicit>no</itunes:explicit>
-            <itunes:duration>4:49</itunes:duration>
-            <itunes:keywords>BLOG create howto</itunes:keywords>
+          <itunes:episode>4</itunes:episode>
+          <itunes:season>1</itunes:season>
+          <itunes:episodeType>trailer</itunes:episodeType>
+          <itunes:title>Hiking Treks Trailer</itunes:title>
+          <description>
+              <![CDATA[The Sunset Explorers share tips, techniques and recommendations for
+              great hikes and adventures around the United States. Listen on
+              <a href="https://www.apple.com/itunes/podcasts/">Apple Podcasts</a>.]]>
+          </description>
+          <enclosure
+            length="498537"
+            type="audio/mpeg"
+            url="http://example.com/podcasts/everything/AllAboutEverythingEpisode4.mp3"
+          />
+          <guid>aae20190418</guid>
+          <pubDate>Tue, 8 Jan 2019 01:15:00 GMT</pubDate>
+          <itunes:duration>1079</itunes:duration>
+          <itunes:explicit>false</itunes:explicit>
+          <itunes:image href="https://applehosted.podcasts.apple.com/hiking_treks/artwork2.png"/>
+          <itunes:block>No</itunes:block>
         </item>
     </channel>
 </rss>

@@ -1,10 +1,12 @@
 package com.raminzare.jpodcatcher.model;
 
+import com.raminzare.jpodcatcher.model.itunes.ItunesItemData;
+
 import java.util.ArrayList;
 import java.util.List;
 
 public record Item(String guid, String title, String pubDate, String link, String description,
-                   Enclosure enclosure, List<String> categories) {
+                   Enclosure enclosure, List<String> categories, ItunesItemData itunesItemData) {
     public static class Builder {
         private String guid;
         private String title;
@@ -12,6 +14,7 @@ public record Item(String guid, String title, String pubDate, String link, Strin
         private String link;
         private String description;
         private Enclosure enclosure;
+        private ItunesItemData itunesItemData;
         private final List<String> categories = new ArrayList<>();
 
         public void setGuid(String guid) {
@@ -42,10 +45,12 @@ public record Item(String guid, String title, String pubDate, String link, Strin
             categories.add(category);
         }
 
-        public Item build() {
-            return new Item(guid, title, pubDate, link, description, enclosure, categories);
+        public void setItunesItemData(ItunesItemData itunesItemData) {
+            this.itunesItemData = itunesItemData;
         }
 
-
+        public Item build() {
+            return new Item(guid, title, pubDate, link, description, enclosure, categories, itunesItemData);
+        }
     }
 }

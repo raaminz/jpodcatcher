@@ -4,6 +4,7 @@ import com.raminzare.jpodcatcher.PodcastReaderException;
 import com.raminzare.jpodcatcher.model.Channel;
 import com.raminzare.jpodcatcher.model.Item;
 import com.raminzare.jpodcatcher.model.itunes.ItunesChannelData;
+import com.raminzare.jpodcatcher.model.itunes.ItunesItemData;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
@@ -90,6 +91,21 @@ class PodcastReaderSaxParserImplTest {
                 , () -> assertEquals(Collections.singletonList("Information Technology"), itunes.category().subCategories())
                 , () -> assertEquals("FeedForAll Mac OS Team", itunes.owner().name())
                 , () -> assertEquals("macsupport@feedforall.com", itunes.owner().email())
+        );
+    }
+
+    @Test
+    void loadRSSShouldContainItunesEpisodesData() throws PodcastReaderException {
+        Channel channel = saxParser.loadRSS(podcastWithItunesURI);
+        ItunesItemData itunes = channel.items().get(0).itunesItemData();
+        assertAll(
+                () -> assertEquals("4", itunes.episode())
+                ,() -> assertEquals("1", itunes.season())
+                ,() -> assertEquals("trailer", itunes.episodeType())
+                ,() -> assertEquals("Hiking Treks Trailer", itunes.title())
+                ,() -> assertEquals("1079", itunes.duration())
+                ,() -> assertEquals("https://applehosted.podcasts.apple.com/hiking_treks/artwork2.png", itunes.image())
+                ,() -> assertEquals("No", itunes.block())
         );
     }
 

@@ -8,6 +8,7 @@ import com.raminzare.jpodcatcher.model.Image;
 import com.raminzare.jpodcatcher.model.Item;
 import com.raminzare.jpodcatcher.model.itunes.ItunesCategory;
 import com.raminzare.jpodcatcher.model.itunes.ItunesChannelData;
+import com.raminzare.jpodcatcher.model.itunes.ItunesItemData;
 import com.raminzare.jpodcatcher.model.itunes.ItunesOwner;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
@@ -56,16 +57,17 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
         private Channel.Builder channelBuilder;
         private Image.Builder imageBuilder;
         private Item.Builder itemBuilder;
-        private ItunesChannelData.Builder itemChannelDataBuilder;
+        private ItunesChannelData.Builder itunesChannelDataBuilder;
         private ItunesCategory.Builder itunesCategoryBuilder;
         private ItunesOwner.Builder itunesOwnerBuilder;
+        private ItunesItemData.Builder itunesItemDataBuilder;
 
         @Override
         public void startDocument() throws SAXException {
             channelBuilder = new Channel.Builder();
             imageBuilder = new Image.Builder();
             itemBuilder = new Item.Builder();
-            itemChannelDataBuilder = new ItunesChannelData.Builder();
+            itunesChannelDataBuilder = new ItunesChannelData.Builder();
             itunesCategoryBuilder = new ItunesCategory.Builder();
             itunesOwnerBuilder = new ItunesOwner.Builder();
         }
@@ -100,6 +102,7 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
                             throw new SAXException("No Channel element found in the XML");
                         }
                         itemBuilder = new Item.Builder();
+                        itunesItemDataBuilder = new ItunesItemData.Builder();
                     }
                     case ENCLOSURE -> {
                         if (checkParent.test(Element.ITEM) && itemBuilder != null) {
@@ -115,7 +118,9 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
                     }
                     case ITUNES_IMAGE -> {
                         if (checkParent.test(Element.CHANNEL)) {
-                            itemChannelDataBuilder.setImage(attributes.getValue("href"));
+                            itunesChannelDataBuilder.setImage(attributes.getValue("href"));
+                        } else if (checkParent.test(Element.ITEM)) {
+                            itunesItemDataBuilder.setImage(attributes.getValue("href"));
                         }
                     }
                     default -> currentStringBuilder = new StringBuilder();
@@ -155,8 +160,8 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
                 } else if (checkParent.test(Element.ITUNES_OWNER)) {
                     itunesOwnerSwitches(element.get(), content.get());
                 }
-                if (Element.ITEM.getElementName().equals(navigation.peek())) {
-                    channelBuilder.setItunesChannelData(itemChannelDataBuilder.build());
+                if (Element.CHANNEL.getElementName().equals(navigation.peek())) {
+                    channelBuilder.setItunesChannelData(itunesChannelDataBuilder.build());
                 }
                 currentStringBuilder = null;
             } else {
@@ -181,6 +186,13 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
                 case DESCRIPTION -> itemBuilder.setDescription(content);
                 case CATEGORY -> itemBuilder.addCategory(content);
                 case ENCLOSURE -> {/*Already handled with attributes*/}
+                case ITUNES_EPISODE -> itunesItemDataBuilder.setEpisode(content);
+                case ITUNES_SEASON -> itunesItemDataBuilder.setSeason(content);
+                case ITUNES_EPISODE_TYPE -> itunesItemDataBuilder.setEpisodeType(content);
+                case ITUNES_TITLE -> itunesItemDataBuilder.setTitle(content);
+                case ITUNES_DURATION -> itunesItemDataBuilder.setDuration(content);
+                case ITUNES_EXPLICIT -> itunesItemDataBuilder.setExplicit(content);
+                case ITUNES_BLOCK -> itunesItemDataBuilder.setBlock(content);
                 default -> LOG.warning(() -> "%s element with value %s is not supported as ITEM info".formatted(element, content));
             }
         }
@@ -209,18 +221,20 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
                     imageBuilder = null;
                 }
                 case ITEM -> {
+                    itemBuilder.setItunesItemData(itunesItemDataBuilder.build());
                     channelBuilder.addItem(itemBuilder.build());
                     itemBuilder = null;
+                    itunesItemDataBuilder = null;
                 }
-                case ITUNES_CATEGORY -> itemChannelDataBuilder.setCategory(itunesCategoryBuilder.build());
-                case ITUNES_EXPLICIT -> itemChannelDataBuilder.setExplicit(content);
-                case ITUNES_AUTHOR -> itemChannelDataBuilder.setAuthor(content);
-                case ITUNES_OWNER -> itemChannelDataBuilder.setOwner(itunesOwnerBuilder.build());
-                case ITUNES_TITLE -> itemChannelDataBuilder.setTitle(content);
-                case ITUNES_TYPE -> itemChannelDataBuilder.setType(content);
-                case ITUNES_NEW_FEED_URL -> itemChannelDataBuilder.setNewFeedUrl(content);
-                case ITUNES_BLOCK -> itemChannelDataBuilder.setBlock(content);
-                case ITUNES_COMPLETE -> itemChannelDataBuilder.setComplete(content);
+                case ITUNES_CATEGORY -> itunesChannelDataBuilder.setCategory(itunesCategoryBuilder.build());
+                case ITUNES_EXPLICIT -> itunesChannelDataBuilder.setExplicit(content);
+                case ITUNES_AUTHOR -> itunesChannelDataBuilder.setAuthor(content);
+                case ITUNES_OWNER -> itunesChannelDataBuilder.setOwner(itunesOwnerBuilder.build());
+                case ITUNES_TITLE -> itunesChannelDataBuilder.setTitle(content);
+                case ITUNES_TYPE -> itunesChannelDataBuilder.setType(content);
+                case ITUNES_NEW_FEED_URL -> itunesChannelDataBuilder.setNewFeedUrl(content);
+                case ITUNES_BLOCK -> itunesChannelDataBuilder.setBlock(content);
+                case ITUNES_COMPLETE -> itunesChannelDataBuilder.setComplete(content);
                 default -> LOG.warning(() -> "%s element with value %s is not supported as CHANNEL info".formatted(element, content));
             }
         }
@@ -256,7 +270,11 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
             ITUNES_TYPE("itunes:type"),
             ITUNES_NEW_FEED_URL("itunes:new-feed-url"),
             ITUNES_BLOCK("itunes:block"),
-            ITUNES_COMPLETE("itunes:complete");
+            ITUNES_COMPLETE("itunes:complete"),
+            ITUNES_EPISODE("itunes:episode"),
+            ITUNES_SEASON("itunes:season"),
+            ITUNES_EPISODE_TYPE("itunes:episodeType"),
+            ITUNES_DURATION("itunes:duration");
 
             private final String elementName;
 
