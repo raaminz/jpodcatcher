@@ -5,7 +5,7 @@ import java.util.List;
 
 public record Item(String guid, String title, String pubDate, String link, String description,
                    Enclosure enclosure, List<String> categories) {
-    public static class ItemBuilder {
+    public static class Builder {
         private String guid;
         private String title;
         private String pubDate;

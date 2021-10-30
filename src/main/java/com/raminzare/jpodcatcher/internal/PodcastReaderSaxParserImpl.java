@@ -2,11 +2,13 @@ package com.raminzare.jpodcatcher.internal;
 
 import com.raminzare.jpodcatcher.PodcastReader;
 import com.raminzare.jpodcatcher.PodcastReaderException;
+import com.raminzare.jpodcatcher.model.Channel;
 import com.raminzare.jpodcatcher.model.Enclosure;
 import com.raminzare.jpodcatcher.model.Image;
 import com.raminzare.jpodcatcher.model.Item;
-import com.raminzare.jpodcatcher.model.Podcast;
+import com.raminzare.jpodcatcher.model.itunes.ItunesCategory;
 import com.raminzare.jpodcatcher.model.itunes.ItunesChannelData;
+import com.raminzare.jpodcatcher.model.itunes.ItunesOwner;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
@@ -16,7 +18,6 @@ import javax.xml.parsers.SAXParser;
 import javax.xml.parsers.SAXParserFactory;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Deque;
 import java.util.LinkedList;
 import java.util.Optional;
 import java.util.function.Predicate;
@@ -38,7 +39,7 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
     }
 
     @Override
-    public Podcast loadRSS(String uri) throws PodcastReaderException {
+    public Channel loadRSS(String uri) throws PodcastReaderException {
         try {
             var handler = new RSSHandler();
             saxParser.parse(uri, handler);
@@ -49,26 +50,32 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
     }
 
     private static class RSSHandler extends DefaultHandler {
-        private final Deque<String> navigation = new LinkedList<>();
+        private final LinkedList<String> navigation = new LinkedList<>();
 
         private StringBuilder currentStringBuilder;
-        private Podcast.PodcastBuilder podcastBuilder;
-        private Image.ImageBuilder imageBuilder;
-        private Item.ItemBuilder itemBuilder;
-        private ItunesChannelData.ItemChannelDataBuilder itemChannelDataBuilder;
+        private Channel.Builder channelBuilder;
+        private Image.Builder imageBuilder;
+        private Item.Builder itemBuilder;
+        private ItunesChannelData.Builder itemChannelDataBuilder;
+        private ItunesCategory.Builder itunesCategoryBuilder;
+        private ItunesOwner.Builder itunesOwnerBuilder;
 
         @Override
         public void startDocument() throws SAXException {
-            podcastBuilder = new Podcast.PodcastBuilder();
-            imageBuilder = new Image.ImageBuilder();
-            itemBuilder = new Item.ItemBuilder();
+            channelBuilder = new Channel.Builder();
+            imageBuilder = new Image.Builder();
+            itemBuilder = new Item.Builder();
+            itemChannelDataBuilder = new ItunesChannelData.Builder();
+            itunesCategoryBuilder = new ItunesCategory.Builder();
+            itunesOwnerBuilder = new ItunesOwner.Builder();
         }
 
         @Override
         public void startElement(String uri, String localName, String qName, Attributes attributes) throws SAXException {
             var supportedElement =
-                    Element.getElement(qName).orElse(null);
-            Predicate<Element> checkParent = elm -> navigation.isEmpty() || navigation.peek().equals(elm.getElementName());
+                    Element.getElement(localName.equals("") ? qName : localName + ":" + qName).orElse(null);
+            Predicate<Element> checkParent = elm -> !navigation.isEmpty() && navigation.peek().equals(elm.getElementName());
+            Predicate<Element> check2Parent = elm -> navigation.size() >= 2 && navigation.get(1).equals(elm.getElementName());
 
             if (supportedElement != null) {
                 switch (supportedElement) {
@@ -86,17 +93,29 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
                         if (!checkParent.test(Element.CHANNEL)) {
                             throw new SAXException("No Channel element found in the XML");
                         }
-                        imageBuilder = new Image.ImageBuilder();
+                        imageBuilder = new Image.Builder();
                     }
                     case ITEM -> {
                         if (!checkParent.test(Element.CHANNEL)) {
                             throw new SAXException("No Channel element found in the XML");
                         }
-                        itemBuilder = new Item.ItemBuilder();
+                        itemBuilder = new Item.Builder();
                     }
                     case ENCLOSURE -> {
                         if (checkParent.test(Element.ITEM) && itemBuilder != null) {
                             readEnclosureElement(attributes);
+                        }
+                    }
+                    case ITUNES_CATEGORY -> {
+                        if (checkParent.test(Element.CHANNEL)) {
+                            itunesCategoryBuilder.setCategory(attributes.getValue("text"));
+                        } else if (checkParent.test(Element.ITUNES_CATEGORY) && check2Parent.test(Element.CHANNEL)) {
+                            itunesCategoryBuilder.addSubCategory(attributes.getValue("text"));
+                        }
+                    }
+                    case ITUNES_IMAGE -> {
+                        if (checkParent.test(Element.CHANNEL)) {
+                            itemChannelDataBuilder.setImage(attributes.getValue("href"));
                         }
                     }
                     default -> currentStringBuilder = new StringBuilder();
@@ -111,7 +130,7 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
         }
 
         private void readEnclosureElement(Attributes attributes) {
-            var enclosure = new Enclosure.EnclosureBuilder()
+            var enclosure = new Enclosure.Builder()
                     .setLength(Optional.ofNullable(attributes.getValue("length"))
                             .map(Long::valueOf).orElse(null))
                     .setType(attributes.getValue("type"))
@@ -133,10 +152,23 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
                     imageSwitches(element.get(), content.get());
                 } else if (checkParent.test(Element.ITEM)) {
                     itemSwitches(element.get(), content.get());
+                } else if (checkParent.test(Element.ITUNES_OWNER)) {
+                    itunesOwnerSwitches(element.get(), content.get());
+                }
+                if (Element.ITEM.getElementName().equals(navigation.peek())) {
+                    channelBuilder.setItunesChannelData(itemChannelDataBuilder.build());
                 }
                 currentStringBuilder = null;
             } else {
                 //TODO decide
+            }
+        }
+
+        private void itunesOwnerSwitches(Element element, String content) {
+            switch (element) {
+                case ITUNES_NAME -> itunesOwnerBuilder.setName(content);
+                case ITUNES_EMAIL -> itunesOwnerBuilder.setEmail(content);
+                default -> LOG.warning(() -> "%s element with value %s is not supported as itunes:owner info".formatted(element, content));
             }
         }
 
@@ -164,22 +196,31 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
 
         private void channelSwitches(Element element, String content) {
             switch (element) {
-                case TITLE -> podcastBuilder.setTitle(content);
-                case DESCRIPTION -> podcastBuilder.setDescription(content);
-                case LINK -> podcastBuilder.setLink(content);
-                case COPYRIGHT -> podcastBuilder.setCopyright(content);
-                case LANGUAGE -> podcastBuilder.setLanguage(content);
-                case GENERATOR -> podcastBuilder.setGenerator(content);
-                case PUB_DATE -> podcastBuilder.setPubDate(content);
-                case LAST_BUILD_DATE -> podcastBuilder.setLastBuildDate(content);
+                case TITLE -> channelBuilder.setTitle(content);
+                case DESCRIPTION -> channelBuilder.setDescription(content);
+                case LINK -> channelBuilder.setLink(content);
+                case COPYRIGHT -> channelBuilder.setCopyright(content);
+                case LANGUAGE -> channelBuilder.setLanguage(content);
+                case GENERATOR -> channelBuilder.setGenerator(content);
+                case PUB_DATE -> channelBuilder.setPubDate(content);
+                case LAST_BUILD_DATE -> channelBuilder.setLastBuildDate(content);
                 case IMAGE -> {
-                    podcastBuilder.setImage(imageBuilder.build());
+                    channelBuilder.setImage(imageBuilder.build());
                     imageBuilder = null;
                 }
                 case ITEM -> {
-                    podcastBuilder.addItem(itemBuilder.build());
+                    channelBuilder.addItem(itemBuilder.build());
                     itemBuilder = null;
                 }
+                case ITUNES_CATEGORY -> itemChannelDataBuilder.setCategory(itunesCategoryBuilder.build());
+                case ITUNES_EXPLICIT -> itemChannelDataBuilder.setExplicit(content);
+                case ITUNES_AUTHOR -> itemChannelDataBuilder.setAuthor(content);
+                case ITUNES_OWNER -> itemChannelDataBuilder.setOwner(itunesOwnerBuilder.build());
+                case ITUNES_TITLE -> itemChannelDataBuilder.setTitle(content);
+                case ITUNES_TYPE -> itemChannelDataBuilder.setType(content);
+                case ITUNES_NEW_FEED_URL -> itemChannelDataBuilder.setNewFeedUrl(content);
+                case ITUNES_BLOCK -> itemChannelDataBuilder.setBlock(content);
+                case ITUNES_COMPLETE -> itemChannelDataBuilder.setComplete(content);
                 default -> LOG.warning(() -> "%s element with value %s is not supported as CHANNEL info".formatted(element, content));
             }
         }
@@ -196,14 +237,26 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
             //Do Nothing
         }
 
-        public Podcast getPodcast() {
-            return podcastBuilder.build();
+        public Channel getPodcast() {
+            return channelBuilder.build();
         }
 
         private enum Element {
             RSS, CHANNEL, TITLE, DESCRIPTION, LINK, PUB_DATE("pubDate"),
             LAST_BUILD_DATE("lastBuildDate"), LANGUAGE, COPYRIGHT, GENERATOR, IMAGE, ITEM,
-            URL, GUID, AUTHOR, CATEGORY, ENCLOSURE;
+            URL, GUID, AUTHOR, CATEGORY, ENCLOSURE,
+            ITUNES_IMAGE("itunes:image"),
+            ITUNES_CATEGORY("itunes:category"),
+            ITUNES_EXPLICIT("itunes:explicit"),
+            ITUNES_AUTHOR("itunes:author"),
+            ITUNES_OWNER("itunes:owner"),
+            ITUNES_NAME("itunes:name"),
+            ITUNES_EMAIL("itunes:email"),
+            ITUNES_TITLE("itunes:title"),
+            ITUNES_TYPE("itunes:type"),
+            ITUNES_NEW_FEED_URL("itunes:new-feed-url"),
+            ITUNES_BLOCK("itunes:block"),
+            ITUNES_COMPLETE("itunes:complete");
 
             private final String elementName;
 

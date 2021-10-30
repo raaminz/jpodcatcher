@@ -2,24 +2,21 @@ package com.raminzare.jpodcatcher.model;
 
 public record Image(String url, String title, String link) {
 
-    public static class ImageBuilder {
+    public static class Builder {
         private String url;
         private String title;
         private String link;
 
-        public ImageBuilder setUrl(String url) {
+        public void setUrl(String url) {
             this.url = url;
-            return this;
         }
 
-        public ImageBuilder setTitle(String title) {
+        public void setTitle(String title) {
             this.title = title;
-            return this;
         }
 
-        public ImageBuilder setLink(String link) {
+        public void setLink(String link) {
             this.link = link;
-            return this;
         }
 
         public Image build() {

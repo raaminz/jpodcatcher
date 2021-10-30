@@ -1,54 +1,63 @@
 package com.raminzare.jpodcatcher.model.itunes;
 
-import java.util.ArrayList;
-import java.util.List;
+public record ItunesChannelData(String explicit, ItunesCategory category,
+                                String complete, String type, String author, String title,
+                                String block, ItunesOwner owner,
+                                String image, String newFeedUrl) {
+    public static class Builder {
+        String explicit;
+        ItunesCategory category;
+        String complete;
+        String type;
+        String author;
+        String title;
+        String block;
+        ItunesOwner owner;
+        String image;
+        String newFeedUrl;
 
-public record ItunesChannelData(String author, String image, String explicit, List<String> categories,
-								String complete, String type, Integer limit, String countryOfOrigin) {
-	public static class ItemChannelDataBuilder {
-		private final List<String> categories = new ArrayList<>();
-		private String author;
-		private String image;
-		private String explicit;
-		private String complete;
-		private String type;
-		private Integer limit;
-		private String countryOfOrigin;
+        public void setExplicit(String explicit) {
+            this.explicit = explicit;
+        }
 
-		public void setAuthor(String author) {
-			this.author = author;
-		}
+        public void setCategory(ItunesCategory category) {
+            this.category = category;
+        }
 
-		public void setImage(String image) {
-			this.image = image;
-		}
+        public void setComplete(String complete) {
+            this.complete = complete;
+        }
 
-		public void setExplicit(String explicit) {
-			this.explicit = explicit;
-		}
+        public void setType(String type) {
+            this.type = type;
+        }
 
-		public void addCategory(String category) {
-			this.categories.add(category);
-		}
+        public void setAuthor(String author) {
+            this.author = author;
+        }
 
-		public void setComplete(String complete) {
-			this.complete = complete;
-		}
+        public void setTitle(String title) {
+            this.title = title;
+        }
 
-		public void setType(String type) {
-			this.type = type;
-		}
+        public void setBlock(String block) {
+            this.block = block;
+        }
 
-		public void setLimit(Integer limit) {
-			this.limit = limit;
-		}
+        public void setOwner(ItunesOwner owner) {
+            this.owner = owner;
+        }
 
-		public void setCountryOfOrigin(String countryOfOrigin) {
-			this.countryOfOrigin = countryOfOrigin;
-		}
+        public void setImage(String image) {
+            this.image = image;
+        }
 
-		public ItunesChannelData build() {
-			return new ItunesChannelData(author, image, explicit, categories, complete, type, limit, countryOfOrigin);
-		}
-	}
+        public void setNewFeedUrl(String newFeedUrl) {
+            this.newFeedUrl = newFeedUrl;
+        }
+
+        public ItunesChannelData build() {
+            return new ItunesChannelData(explicit, category, complete, type, author, title, block, owner, image, newFeedUrl);
+        }
+    }
 }

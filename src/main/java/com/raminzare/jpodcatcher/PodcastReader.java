@@ -1,7 +1,7 @@
 package com.raminzare.jpodcatcher;
 
-import com.raminzare.jpodcatcher.model.Podcast;
+import com.raminzare.jpodcatcher.model.Channel;
 
 public interface PodcastReader {
-    Podcast loadRSS(String uri) throws PodcastReaderException;
+    Channel loadRSS(String uri) throws PodcastReaderException;
 }
