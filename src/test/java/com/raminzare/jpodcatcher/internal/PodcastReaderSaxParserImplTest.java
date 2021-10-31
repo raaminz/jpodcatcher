@@ -5,10 +5,7 @@ import com.raminzare.jpodcatcher.model.Channel;
 import com.raminzare.jpodcatcher.model.Item;
 import com.raminzare.jpodcatcher.model.itunes.ItunesChannelData;
 import com.raminzare.jpodcatcher.model.itunes.ItunesItemData;
-import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -74,39 +71,43 @@ class PodcastReaderSaxParserImplTest {
         );
     }
 
-    @Test
-    void loadRSSShouldContainItunesData() throws PodcastReaderException {
-        Channel channel = saxParser.loadRSS(podcastWithItunesURI);
-        ItunesChannelData itunes = channel.itunesChannelData();
-        assertAll(
-                () -> assertEquals("FeedForAll Mac OS Team", itunes.author())
-                , () -> assertEquals("RSS Feed Podcast", itunes.title())
-                , () -> assertEquals("serial", itunes.type())
-                , () -> assertEquals("No", itunes.block())
-                , () -> assertEquals("No", itunes.complete())
-                , () -> assertEquals("False", itunes.explicit())
-                , () -> assertEquals("https://applehosted.podcasts.apple.com/hiking_treks/artwork.png", itunes.image())
-                , () -> assertEquals("https://newlocation.com/example.rss", itunes.newFeedUrl())
-                , () -> assertEquals("Technology", itunes.category().category())
-                , () -> assertEquals(Collections.singletonList("Information Technology"), itunes.category().subCategories())
-                , () -> assertEquals("FeedForAll Mac OS Team", itunes.owner().name())
-                , () -> assertEquals("macsupport@feedforall.com", itunes.owner().email())
-        );
+    @Nested
+    class ItunesPodcastElementTest{
+        @Test
+        void loadRSSShouldContainItunesData() throws PodcastReaderException {
+            Channel channel = saxParser.loadRSS(podcastWithItunesURI);
+            ItunesChannelData itunes = channel.itunesChannelData();
+            assertAll(
+                    () -> assertEquals("FeedForAll Mac OS Team", itunes.author())
+                    , () -> assertEquals("RSS Feed Podcast", itunes.title())
+                    , () -> assertEquals("serial", itunes.type())
+                    , () -> assertEquals("No", itunes.block())
+                    , () -> assertEquals("No", itunes.complete())
+                    , () -> assertEquals("False", itunes.explicit())
+                    , () -> assertEquals("https://applehosted.podcasts.apple.com/hiking_treks/artwork.png", itunes.image())
+                    , () -> assertEquals("https://newlocation.com/example.rss", itunes.newFeedUrl())
+                    , () -> assertEquals("Technology", itunes.category().category())
+                    , () -> assertEquals(Collections.singletonList("Information Technology"), itunes.category().subCategories())
+                    , () -> assertEquals("FeedForAll Mac OS Team", itunes.owner().name())
+                    , () -> assertEquals("macsupport@feedforall.com", itunes.owner().email())
+            );
+        }
+
+        @Test
+        void loadRSSShouldContainItunesEpisodesData() throws PodcastReaderException {
+            Channel channel = saxParser.loadRSS(podcastWithItunesURI);
+            ItunesItemData itunes = channel.items().get(0).itunesItemData();
+            assertAll(
+                    () -> assertEquals("4", itunes.episode())
+                    ,() -> assertEquals("1", itunes.season())
+                    ,() -> assertEquals("trailer", itunes.episodeType())
+                    ,() -> assertEquals("Hiking Treks Trailer", itunes.title())
+                    ,() -> assertEquals("1079", itunes.duration())
+                    ,() -> assertEquals("https://applehosted.podcasts.apple.com/hiking_treks/artwork2.png", itunes.image())
+                    ,() -> assertEquals("No", itunes.block())
+            );
+        }
     }
 
-    @Test
-    void loadRSSShouldContainItunesEpisodesData() throws PodcastReaderException {
-        Channel channel = saxParser.loadRSS(podcastWithItunesURI);
-        ItunesItemData itunes = channel.items().get(0).itunesItemData();
-        assertAll(
-                () -> assertEquals("4", itunes.episode())
-                ,() -> assertEquals("1", itunes.season())
-                ,() -> assertEquals("trailer", itunes.episodeType())
-                ,() -> assertEquals("Hiking Treks Trailer", itunes.title())
-                ,() -> assertEquals("1079", itunes.duration())
-                ,() -> assertEquals("https://applehosted.podcasts.apple.com/hiking_treks/artwork2.png", itunes.image())
-                ,() -> assertEquals("No", itunes.block())
-        );
-    }
 
 }
