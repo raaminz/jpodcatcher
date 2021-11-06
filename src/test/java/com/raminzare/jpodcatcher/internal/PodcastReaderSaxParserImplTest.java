@@ -13,6 +13,8 @@ import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@DisplayName("Podcast reader test using SAX parser")
+@DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 class PodcastReaderSaxParserImplTest {
 
     PodcastReaderSaxParserImpl saxParser;
@@ -31,13 +33,14 @@ class PodcastReaderSaxParserImplTest {
     }
 
     @Test
-    void loadWrongRSSURIShouldThrowException() {
+    @DisplayName("loading a wrong RSS should throw exception")
+    void load_wrong_RSS_URI_should_throw_exception() {
         Assertions.assertThrows(PodcastReaderException.class
                 , () -> saxParser.loadRSS("WRONG_URI"));
     }
 
     @Test
-    void loadRSSShouldContainChannelData() throws PodcastReaderException {
+    void load_RSS_should_contain_channel_data() throws PodcastReaderException {
         Channel channel = saxParser.loadRSS(simplePodcastURI);
         assertAll(() -> assertEquals("Raw Data", channel.title()),
                 () -> assertEquals("We’ve entered a new era.", channel.description()),
@@ -54,7 +57,7 @@ class PodcastReaderSaxParserImplTest {
     }
 
     @Test
-    void loadRSSShouldContainEpisodesData() throws PodcastReaderException {
+    void load_RSS_should_contain_episode_data() throws PodcastReaderException {
         Channel channel = saxParser.loadRSS(simplePodcastURI);
         assertEquals(2, channel.items().size());
         Item firstItem = channel.items().get(0);
@@ -72,9 +75,10 @@ class PodcastReaderSaxParserImplTest {
     }
 
     @Nested
+    @DisplayName("Unit tests related to itunes elements")
     class ItunesPodcastElementTest{
         @Test
-        void loadRSSShouldContainItunesData() throws PodcastReaderException {
+        void load_RSS_should_contain_itunes_data() throws PodcastReaderException {
             Channel channel = saxParser.loadRSS(podcastWithItunesURI);
             ItunesChannelData itunes = channel.itunesChannelData();
             assertAll(
@@ -94,7 +98,7 @@ class PodcastReaderSaxParserImplTest {
         }
 
         @Test
-        void loadRSSShouldContainItunesEpisodesData() throws PodcastReaderException {
+        void load_RSS_should_contain_itunes_episode_data() throws PodcastReaderException {
             Channel channel = saxParser.loadRSS(podcastWithItunesURI);
             ItunesItemData itunes = channel.items().get(0).itunesItemData();
             assertAll(
