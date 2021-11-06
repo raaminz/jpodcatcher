@@ -5,11 +5,13 @@ import com.raminzare.jpodcatcher.model.Channel;
 import com.raminzare.jpodcatcher.model.Item;
 import com.raminzare.jpodcatcher.model.itunes.ItunesChannelData;
 import com.raminzare.jpodcatcher.model.itunes.ItunesItemData;
+import com.raminzare.jpodcatcher.model.spotify.SpotifyChannelData;
 import org.junit.jupiter.api.*;
 
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -75,8 +77,8 @@ class PodcastReaderSaxParserImplTest {
     }
 
     @Nested
-    @DisplayName("Unit tests related to itunes elements")
-    class ItunesPodcastElementTest{
+    @DisplayName("tests related to itunes elements")
+    class ItunesPodcastElementTest {
         @Test
         void load_RSS_should_contain_itunes_data() throws PodcastReaderException {
             Channel channel = saxParser.loadRSS(podcastWithItunesURI);
@@ -103,13 +105,26 @@ class PodcastReaderSaxParserImplTest {
             ItunesItemData itunes = channel.items().get(0).itunesItemData();
             assertAll(
                     () -> assertEquals("4", itunes.episode())
-                    ,() -> assertEquals("1", itunes.season())
-                    ,() -> assertEquals("trailer", itunes.episodeType())
-                    ,() -> assertEquals("Hiking Treks Trailer", itunes.title())
-                    ,() -> assertEquals("1079", itunes.duration())
-                    ,() -> assertEquals("https://applehosted.podcasts.apple.com/hiking_treks/artwork2.png", itunes.image())
-                    ,() -> assertEquals("No", itunes.block())
+                    , () -> assertEquals("1", itunes.season())
+                    , () -> assertEquals("trailer", itunes.episodeType())
+                    , () -> assertEquals("Hiking Treks Trailer", itunes.title())
+                    , () -> assertEquals("1079", itunes.duration())
+                    , () -> assertEquals("https://applehosted.podcasts.apple.com/hiking_treks/artwork2.png", itunes.image())
+                    , () -> assertEquals("No", itunes.block())
             );
+        }
+    }
+
+    @Nested
+    @DisplayName("Tests related to spotify elements")
+    @Disabled("Since spotify elements are not important, we ignored them temporary")
+    class SpotifyPodcastElementTest {
+        @Test
+        void load_RSS_should_contain_spotify_data() throws PodcastReaderException {
+            Channel channel = saxParser.loadRSS(podcastWithItunesURI);
+            SpotifyChannelData spotify = channel.spotifyChannelData();
+            assertNotNull(spotify.countryOfOrigins());
+            assertEquals(Stream.of("IR", "AF", "TJ").toList(), spotify.countryOfOrigins());
         }
     }
 

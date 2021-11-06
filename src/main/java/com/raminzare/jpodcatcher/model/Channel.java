@@ -1,13 +1,14 @@
 package com.raminzare.jpodcatcher.model;
 
 import com.raminzare.jpodcatcher.model.itunes.ItunesChannelData;
+import com.raminzare.jpodcatcher.model.spotify.SpotifyChannelData;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public record Channel(String title, String description, String link, String pubDate, String lastBuildDate,
                       String language, String copyright, String generator, Image image,
-                      ItunesChannelData itunesChannelData, List<Item> items) {
+                      ItunesChannelData itunesChannelData, SpotifyChannelData spotifyChannelData, List<Item> items) {
 
     public static class Builder {
         private String title;
@@ -68,7 +69,7 @@ public record Channel(String title, String description, String link, String pubD
 
         public Channel build() {
             return new Channel(title, description, link, pubDate, lastBuildDate, language, copyright, generator, image
-                    , itunesChannelData, items);
+                    , itunesChannelData, new SpotifyChannelData(null), items);
         }
     }
 }

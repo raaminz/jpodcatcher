@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd" version="2.0">
+<rss xmlns:itunes="http://www.itunes.com/DTDs/Podcast-1.0.dtd"
+ xmlns:spotify="https://www.spotify.com/ns/rss" version="2.0">
     <channel>
         <title>RSS Feed Podcast</title>
         <description>Podcast explaining the ins and outs of RSS, RSS feeds, feed creation, optimization and use as a marketing technology. The channel is prepared using voice synthesis, reading articles related to RSS.</description>
@@ -7,6 +8,7 @@
         <lastBuildDate>Mon, 25 Jul 2005 16:37:32 -0400</lastBuildDate>
         <pubDate>Mon, 25 Jul 2005 09:00:00 -0400</pubDate>
         <generator>FeedForAll Mac v1.0 (1.0.1.0) unlicensed version</generator>
+        <spotify:countryOfOrigin>IR AF TJ</spotify:countryOfOrigin>
         <itunes:category text="Technology">
             <itunes:category text="Information Technology"/>
         </itunes:category>
