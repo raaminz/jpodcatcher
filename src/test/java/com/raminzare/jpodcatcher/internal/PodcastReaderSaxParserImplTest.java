@@ -1,35 +1,30 @@
 package com.raminzare.jpodcatcher.internal;
 
 import com.raminzare.jpodcatcher.PodcastReaderException;
+import com.raminzare.jpodcatcher.api.RSSURI;
+import com.raminzare.jpodcatcher.api.URIParameterResolverExtension;
 import com.raminzare.jpodcatcher.model.Channel;
 import com.raminzare.jpodcatcher.model.Item;
 import com.raminzare.jpodcatcher.model.itunes.ItunesChannelData;
 import com.raminzare.jpodcatcher.model.itunes.ItunesItemData;
 import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Objects;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Podcast reader test using SAX parser")
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
+@ExtendWith(URIParameterResolverExtension.class)
 class PodcastReaderSaxParserImplTest {
 
     PodcastReaderSaxParserImpl saxParser;
-    static String simplePodcastURI;
-    static String podcastWithItunesURI;
 
     @BeforeEach
     void beforeEach() {
         saxParser = new PodcastReaderSaxParserImpl();
-    }
-
-    @BeforeAll
-    static void beforeAll() {
-        simplePodcastURI = Objects.requireNonNull(PodcastReaderSaxParserImpl.class.getClassLoader().getResource("simple_podcast.rss")).toString();
-        podcastWithItunesURI = Objects.requireNonNull(PodcastReaderSaxParserImpl.class.getClassLoader().getResource("podcast_with_itunes.rss")).toString();
     }
 
     @Test
@@ -40,7 +35,7 @@ class PodcastReaderSaxParserImplTest {
     }
 
     @Test
-    void load_RSS_should_contain_channel_data() throws PodcastReaderException {
+    void load_RSS_should_contain_channel_data(@RSSURI("simple_podcast.rss") String simplePodcastURI) throws PodcastReaderException {
         Channel channel = saxParser.loadRSS(simplePodcastURI);
         assertAll(() -> assertEquals("Raw Data", channel.title()),
                 () -> assertEquals("We’ve entered a new era.", channel.description()),
@@ -57,7 +52,7 @@ class PodcastReaderSaxParserImplTest {
     }
 
     @Test
-    void load_RSS_should_contain_episode_data() throws PodcastReaderException {
+    void load_RSS_should_contain_episode_data(@RSSURI("simple_podcast.rss") String simplePodcastURI) throws PodcastReaderException {
         Channel channel = saxParser.loadRSS(simplePodcastURI);
         assertEquals(2, channel.items().size());
         Item firstItem = channel.items().get(0);
@@ -76,9 +71,9 @@ class PodcastReaderSaxParserImplTest {
 
     @Nested
     @DisplayName("Unit tests related to itunes elements")
-    class ItunesPodcastElementTest{
+    class ItunesPodcastElementTest {
         @Test
-        void load_RSS_should_contain_itunes_data() throws PodcastReaderException {
+        void load_RSS_should_contain_itunes_data(@RSSURI("podcast_with_itunes.rss") String podcastWithItunesURI) throws PodcastReaderException {
             Channel channel = saxParser.loadRSS(podcastWithItunesURI);
             ItunesChannelData itunes = channel.itunesChannelData();
             assertAll(
@@ -98,17 +93,17 @@ class PodcastReaderSaxParserImplTest {
         }
 
         @Test
-        void load_RSS_should_contain_itunes_episode_data() throws PodcastReaderException {
+        void load_RSS_should_contain_itunes_episode_data(@RSSURI("podcast_with_itunes.rss") String podcastWithItunesURI) throws PodcastReaderException {
             Channel channel = saxParser.loadRSS(podcastWithItunesURI);
             ItunesItemData itunes = channel.items().get(0).itunesItemData();
             assertAll(
                     () -> assertEquals("4", itunes.episode())
-                    ,() -> assertEquals("1", itunes.season())
-                    ,() -> assertEquals("trailer", itunes.episodeType())
-                    ,() -> assertEquals("Hiking Treks Trailer", itunes.title())
-                    ,() -> assertEquals("1079", itunes.duration())
-                    ,() -> assertEquals("https://applehosted.podcasts.apple.com/hiking_treks/artwork2.png", itunes.image())
-                    ,() -> assertEquals("No", itunes.block())
+                    , () -> assertEquals("1", itunes.season())
+                    , () -> assertEquals("trailer", itunes.episodeType())
+                    , () -> assertEquals("Hiking Treks Trailer", itunes.title())
+                    , () -> assertEquals("1079", itunes.duration())
+                    , () -> assertEquals("https://applehosted.podcasts.apple.com/hiking_treks/artwork2.png", itunes.image())
+                    , () -> assertEquals("No", itunes.block())
             );
         }
     }
