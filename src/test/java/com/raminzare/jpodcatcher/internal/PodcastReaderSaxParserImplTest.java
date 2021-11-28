@@ -2,7 +2,6 @@ package com.raminzare.jpodcatcher.internal;
 
 import com.raminzare.jpodcatcher.PodcastReaderException;
 import com.raminzare.jpodcatcher.api.RSSURI;
-import com.raminzare.jpodcatcher.api.RandomParametersExtension;
 import com.raminzare.jpodcatcher.api.URIParameterResolverExtension;
 import com.raminzare.jpodcatcher.model.Channel;
 import com.raminzare.jpodcatcher.model.Item;
@@ -10,17 +9,18 @@ import com.raminzare.jpodcatcher.model.itunes.ItunesChannelData;
 import com.raminzare.jpodcatcher.model.itunes.ItunesItemData;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
 
-import static com.raminzare.jpodcatcher.api.RandomParametersExtension.Random;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Podcast reader test using SAX parser")
 @DisplayNameGeneration(DisplayNameGenerator.ReplaceUnderscores.class)
 @ExtendWith(URIParameterResolverExtension.class)
-@ExtendWith(RandomParametersExtension.class)
 class PodcastReaderSaxParserImplTest {
 
     PodcastReaderSaxParserImpl saxParser;
@@ -28,11 +28,6 @@ class PodcastReaderSaxParserImplTest {
     @BeforeEach
     void beforeEach() {
         saxParser = new PodcastReaderSaxParserImpl();
-    }
-
-    @Test
-    void testRandomInts(@Random int random1, @Random int random2) {
-        Assertions.assertNotEquals(random1, random2);
     }
 
     @Test
