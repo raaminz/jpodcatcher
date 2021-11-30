@@ -25,14 +25,19 @@ class PodcastReaderSaxParserImplTest {
 
     PodcastReaderSaxParserImpl saxParser;
 
+    PodcastReaderSaxParserImplTest(TestInfo info){
+        System.out.println(info);
+    }
+
     @BeforeEach
-    void beforeEach() {
+    void beforeEach(TestInfo info ,@TempDir File tempDir) {
         saxParser = new PodcastReaderSaxParserImpl();
     }
 
     @Test
     @DisplayName("loading a wrong RSS should throw exception")
-    void load_wrong_RSS_URI_should_throw_exception() {
+    void load_wrong_RSS_URI_should_throw_exception(TestInfo info , TestReporter testReporter) {
+        testReporter.publishEntry("The program doesn't let to load wrong URIs");
         Assertions.assertThrows(PodcastReaderException.class
                 , () -> saxParser.loadRSS("WRONG_URI"));
     }
