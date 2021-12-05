@@ -13,6 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.URL;
+import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Optional;
@@ -75,6 +76,14 @@ class PodcastReaderSaxParserImplTest {
                 () -> assertEquals("audio/mpeg", firstItem.enclosure().type()),
                 () -> assertEquals(39374396L, firstItem.enclosure().length()),
                 () -> assertEquals(Arrays.asList("Blockchain", "Charity ryerson"), firstItem.categories())
+        );
+    }
+
+    @Test
+    @Tag("nonfunctional")
+    void load_RSS_performance_test(@RSSURI("podcast_with_itunes.rss") String podcastWithItunesURI) {
+        Assertions.assertTimeout(Duration.ofMillis(30), () ->
+                saxParser.loadRSS(podcastWithItunesURI)
         );
     }
 
