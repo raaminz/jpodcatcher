@@ -44,7 +44,11 @@ public class PodcastReaderSaxParserImpl implements PodcastReader {
         try {
             var handler = new RSSHandler();
             saxParser.parse(uri, handler);
-            return handler.getPodcast();
+            Channel podcast = handler.getPodcast();
+            if (podcast.title() == null || podcast.title().isEmpty()) {
+                throw new PodcastReaderException("Not valid podcast");
+            }
+            return podcast;
         } catch (IOException | SAXException e) {
             throw new PodcastReaderException(e);
         }

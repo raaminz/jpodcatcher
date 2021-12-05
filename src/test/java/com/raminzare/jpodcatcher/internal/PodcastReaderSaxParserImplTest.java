@@ -10,9 +10,14 @@ import com.raminzare.jpodcatcher.model.itunes.ItunesChannelData;
 import com.raminzare.jpodcatcher.model.itunes.ItunesItemData;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
+import java.net.URL;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Optional;
 
 import static com.raminzare.jpodcatcher.api.RandomParametersExtension.Random;
 import static org.junit.jupiter.api.Assertions.*;
@@ -35,11 +40,16 @@ class PodcastReaderSaxParserImplTest {
         Assertions.assertNotEquals(random1, random2);
     }
 
-    @Test
+    @ParameterizedTest
     @DisplayName("loading a wrong RSS should throw exception")
-    void load_wrong_RSS_URI_should_throw_exception() {
+    @ValueSource(strings = {"NotRealURI", "invalid_rss/empty.rss", "invalid_rss/incomplete.rss", "invalid_rss/not_rss.rss"})
+    void load_wrong_RSS_URI_should_throw_exception(String uri) {
         Assertions.assertThrows(PodcastReaderException.class
-                , () -> saxParser.loadRSS("WRONG_URI"));
+                , () -> {
+                    Optional<String> urlFullPath = Optional.ofNullable(URIParameterResolverExtension.class.getClassLoader().getResource(uri)).map(URL::toString);
+                    //If the uri cannot be found in resources just pass it as it is
+                    saxParser.loadRSS(urlFullPath.orElse(uri));
+                });
     }
 
     @Test
