@@ -13,9 +13,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.net.URL;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Optional;
+import java.util.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -76,6 +74,24 @@ class PodcastReaderSaxParserImplTest {
                 () -> assertEquals(39374396L, firstItem.enclosure().length()),
                 () -> assertEquals(Arrays.asList("Blockchain", "Charity ryerson"), firstItem.categories())
         );
+    }
+
+
+    @TestFactory
+    List<DynamicTest> channelAndItemsShouldHaveNecessaryInformation(@RSSURI("simple_podcast.rss") String podcastWithItunesURI) throws PodcastReaderException {
+        Channel channel = new PodcastReaderSaxParserImpl().loadRSS(podcastWithItunesURI);
+
+        List<DynamicTest> dynamicNodes = new ArrayList<>();
+        dynamicNodes.add(DynamicTest.dynamicTest("Podcast should have a title", () -> assertNotNull(channel.title())));
+        if (!channel.items().isEmpty()) {
+            List<Item> items = channel.items();
+            for (int i = 0; i < items.size(); i++) {
+                Item item = items.get(i);
+                dynamicNodes.add(DynamicTest.dynamicTest("Item %d should have guid".formatted(i + 1),
+                        () -> assertNotNull(item.guid())));
+            }
+        }
+        return dynamicNodes;
     }
 
     @Nested
